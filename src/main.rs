@@ -5,6 +5,8 @@
 use core::{panic::PanicInfo, ptr};
 use core::arch::naked_asm;
 
+mod sbi;
+
 unsafe extern "C" {
     static mut __bss: u32;
     static __bss_end: u32;
@@ -17,6 +19,12 @@ fn kernel_main() {
         let bss = ptr::addr_of_mut!(__bss);
         let bss_end = ptr::addr_of!(__bss_end);
         ptr::write_bytes(bss, 0, bss_end as usize - bss as usize);
+
+        let hello = b"Hello World\n";
+        for &ch in hello.iter() {
+            sbi::putchar(ch);
+        }
+
     }
 
     loop {}
