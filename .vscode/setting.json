@@ -1,6 +1,0 @@
-{
-    "rust.target": "riscv32i-unknown-none-elf",
-    "rust.all_targets": false,
-    "rust-analyzer.cargo.target": "riscv32i-unknown-none-elf",
-    "rust-analyzer.checkOnSave": false
-}
