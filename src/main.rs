@@ -2,8 +2,10 @@
 #![no_main]
 #![feature(naked_functions)]
 
-use core::arch::naked_asm;
+use core::arch::{asm, naked_asm};
 use core::{panic::PanicInfo, ptr};
+
+use common::println;
 
 mod sbi;
 
@@ -20,10 +22,8 @@ fn kernel_main() {
         let bss_end = ptr::addr_of!(__bss_end);
         ptr::write_bytes(bss, 0, bss_end as usize - bss as usize);
 
-        let hello = b"Hello World\n";
-        for &ch in hello.iter() {
-            sbi::putchar(ch);
-        }
+        println!("Hello World");
+        println!("Hey!");
     }
 
     loop {}
@@ -43,6 +43,9 @@ extern "C" fn boot() {
 }
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {}
+fn panic(info: &PanicInfo) -> ! {
+    println!("PANIC: {info}");
+    loop {
+        unsafe { asm!("wfi") }
+    }
 }
