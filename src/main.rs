@@ -2,8 +2,8 @@
 #![no_main]
 #![feature(naked_functions)]
 
-use core::{panic::PanicInfo, ptr};
 use core::arch::naked_asm;
+use core::{panic::PanicInfo, ptr};
 
 mod sbi;
 
@@ -24,7 +24,6 @@ fn kernel_main() {
         for &ch in hello.iter() {
             sbi::putchar(ch);
         }
-
     }
 
     loop {}
