@@ -6,8 +6,10 @@ use core::arch::{asm, naked_asm};
 use core::{panic::PanicInfo, ptr};
 
 use common::{println, write_csr};
+use memory::alloc_pages;
 use trap::trap_handler_entry;
 
+mod memory;
 mod sbi;
 mod trap;
 
@@ -24,15 +26,17 @@ fn kernel_main() {
         let bss_end = ptr::addr_of!(__bss_end);
         ptr::write_bytes(bss, 0, bss_end as usize - bss as usize);
 
-        println!("Hello World");
-
         let current_sp: u32;
         asm!("mv {}, sp", out(reg) current_sp);
         write_csr!("sscratch", current_sp);
-
         write_csr!("stvec", trap_handler_entry as u32);
 
-        asm!("unimp");
+        println!("Hello World");
+
+        let paddr0 = alloc_pages(2);
+        let paddr1 = alloc_pages(1);
+        println!("alloc_pages test: paddr0={:x}", paddr0);
+        println!("alloc_pages test: paddr1={:x}", paddr1);
     }
 
     loop {}

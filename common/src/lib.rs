@@ -1,9 +1,6 @@
 #![no_std]
 use core::fmt::Write;
 
-pub type PAddr = u32;
-pub type VAddr = u32;
-pub const PAGE_SIZE: usize = 4096;
 
 pub const fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
