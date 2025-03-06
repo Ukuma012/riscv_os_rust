@@ -10,6 +10,7 @@ use memory::alloc_pages;
 use trap::trap_handler_entry;
 
 mod memory;
+mod process;
 mod sbi;
 mod trap;
 
@@ -32,11 +33,6 @@ fn kernel_main() {
         write_csr!("stvec", trap_handler_entry as u32);
 
         println!("Hello World");
-
-        let paddr0 = alloc_pages(2);
-        let paddr1 = alloc_pages(1);
-        println!("alloc_pages test: paddr0={:x}", paddr0);
-        println!("alloc_pages test: paddr1={:x}", paddr1);
     }
 
     loop {}
