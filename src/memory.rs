@@ -1,8 +1,15 @@
 use core::{panic, ptr};
 
+use common::is_aligned;
+
 pub type PAddr = u32;
 pub type VAddr = u32;
 pub const PAGE_SIZE: usize = 4096;
+pub const PAGE_V: u32 = 1 << 0;
+pub const PAGE_R: u32 = 1 << 1;
+pub const PAGE_W: u32 = 1 << 2;
+pub const PAGE_X: u32 = 1 << 3;
+pub const PAGE_U: u32 = 1 << 4;
 
 unsafe extern "C" {
     static mut __free_ram: u8;
@@ -22,5 +29,28 @@ pub fn alloc_pages(n: usize) -> PAddr {
 
         ptr::write_bytes(paddr as *mut u8, 0, (n * PAGE_SIZE) as usize);
         paddr
+    }
+}
+
+pub fn map_page(table1: u32, vaddr: VAddr, paddr: PAddr, flags: u32) {
+    if !is_aligned(vaddr as usize, PAGE_SIZE) {
+        panic!("unaligned vaddr {}", vaddr);
+    }
+
+    if !is_aligned(paddr as usize, PAGE_SIZE) {
+        panic!("unaligned paddr {}", paddr)
+    }
+
+    let table1 = table1 as *mut u32;
+    let vpn1 = ((vaddr >> 22) & 0x3ff) as isize;
+    unsafe {
+        if (*table1.offset(vpn1) & PAGE_V) == 0 {
+            let pt_paddr = alloc_pages(1);
+            *table1.offset(vpn1) = ((pt_paddr / PAGE_SIZE as u32) << 10) | PAGE_V;
+        }
+
+        let vpn0 = ((vaddr >> 12) & 0x3ff) as isize;
+        let table0 = ((*table1.offset(vpn1) >> 10) * PAGE_SIZE as u32) as *mut u32;
+        *(table0.offset(vpn0)) = ((paddr / PAGE_SIZE as u32) << 10) | flags | PAGE_V;
     }
 }

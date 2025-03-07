@@ -1,6 +1,33 @@
-use core::arch::naked_asm;
+use crate::memory::{
+    PAGE_R, PAGE_SIZE, PAGE_U, PAGE_W, PAGE_X, PAddr, VAddr, alloc_pages, map_page,
+};
+use core::{arch::naked_asm, ptr};
 
-use crate::memory::{PAddr, VAddr};
+unsafe extern "C" {
+    static mut __kernel_base: u32;
+    static mut __free_ram_end: u32;
+}
+
+const PROCS_MAX: usize = 8;
+const USER_BASE: usize = 0x01000000;
+const SSTATUS_SPIE: u32 = 1 << 5;
+const SSTATUS_SUM: u32 = 1 << 18;
+const SSTATUS: u32 = SSTATUS_SPIE | SSTATUS_SUM;
+
+#[naked]
+unsafe extern "C" fn user_entry() {
+    unsafe {
+        naked_asm!(
+            "la a0, {sepc}",
+            "csrw sepc, a0",
+            "la a0, {sstatus}",
+            "csrw sstatus, a0",
+            "sret",
+            sepc = const USER_BASE,
+            sstatus = const SSTATUS,
+        )
+    }
+}
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 enum State {
@@ -31,12 +58,127 @@ impl Process {
     }
 }
 
+pub struct ProcessManager {
+    procs: [Process; PROCS_MAX],
+    pub current: usize,
+}
+
+impl ProcessManager {
+    pub const fn new() -> Self {
+        let mut pm = Self {
+            procs: [Process::new(); PROCS_MAX],
+            current: 0,
+        };
+        pm.procs[0].state = State::IDLE;
+        pm
+    }
+
+    pub fn init(&mut self) {
+        let proc = &mut self.procs[0];
+
+        unsafe {
+            let stack = ptr::addr_of_mut!(proc.stack) as *mut u32;
+            let sp = stack.add(proc.stack.len());
+            *sp.offset(-1) = 0; // s11
+            *sp.offset(-2) = 0; // s10
+            *sp.offset(-3) = 0; // s9
+            *sp.offset(-4) = 0; // s8
+            *sp.offset(-5) = 0; // s7
+            *sp.offset(-6) = 0; // s6
+            *sp.offset(-7) = 0; // s5
+            *sp.offset(-8) = 0; // s4
+            *sp.offset(-9) = 0; // s3
+            *sp.offset(-10) = 0; // s2
+            *sp.offset(-11) = 0; // s1
+            *sp.offset(-12) = 0; // s0
+            *sp.offset(-13) = 0; // ra
+
+            let page_table = alloc_pages(1);
+            let mut paddr = ptr::addr_of_mut!(__kernel_base) as *mut u8;
+            while paddr < ptr::addr_of_mut!(__free_ram_end) as *mut u8 {
+                map_page(
+                    page_table,
+                    paddr as u32,
+                    paddr as u32,
+                    PAGE_R | PAGE_W | PAGE_X,
+                );
+                paddr = paddr.add(PAGE_SIZE as usize);
+            }
+
+            proc.pid = u32::MAX as u32;
+            proc.state = State::IDLE;
+            proc.sp = sp.offset(-13) as VAddr;
+            proc.page_table = page_table;
+        }
+    }
+
+    pub fn create(&mut self, image: *const u32, image_size: usize) {
+        unsafe {
+            if let Some((i, proc)) = self
+                .procs
+                .iter_mut()
+                .enumerate()
+                .find(|(_, p)| p.state == State::UNUSED)
+            {
+                let stack = ptr::addr_of_mut!(proc.stack) as *mut u32;
+                let sp = stack.add(proc.stack.len());
+                *sp.offset(-1) = 0; // s11
+                *sp.offset(-2) = 0; // s10
+                *sp.offset(-3) = 0; // s9
+                *sp.offset(-4) = 0; // s8
+                *sp.offset(-5) = 0; // s7
+                *sp.offset(-6) = 0; // s6
+                *sp.offset(-7) = 0; // s5
+                *sp.offset(-8) = 0; // s4
+                *sp.offset(-9) = 0; // s3
+                *sp.offset(-10) = 0; // s2
+                *sp.offset(-11) = 0; // s1
+                *sp.offset(-12) = 0; // s0
+                *sp.offset(-13) = user_entry as u32;
+
+                let page_table = alloc_pages(1);
+                let mut paddr = ptr::addr_of_mut!(__kernel_base) as *mut u8;
+                while paddr < ptr::addr_of_mut!(__free_ram_end) as *mut u8 {
+                    map_page(
+                        page_table,
+                        paddr as u32,
+                        paddr as u32,
+                        PAGE_R | PAGE_W | PAGE_X,
+                    );
+                    paddr = paddr.add(PAGE_SIZE as usize);
+                }
+
+                let mut off = 0;
+                let pimage = image;
+                while off < image_size {
+                    let page = alloc_pages(1) as *mut u32;
+                    ptr::copy(pimage.offset(off as isize), page, PAGE_SIZE as usize);
+                    map_page(
+                        page_table,
+                        (USER_BASE + off) as u32,
+                        page as u32,
+                        PAGE_U | PAGE_R | PAGE_W | PAGE_X,
+                    );
+                    off += PAGE_SIZE as usize;
+                }
+
+                proc.pid = i as u32;
+                proc.state = State::RUNNABLE;
+                proc.sp = sp.offset(-13) as VAddr;
+                proc.page_table = page_table;
+            } else {
+                panic!("no free process slots");
+            }
+        }
+    }
+}
+
 #[naked]
 #[unsafe(no_mangle)]
 unsafe extern "C" fn switch_context(prev_sp: *mut u32, next_sp: *const u32) {
     unsafe {
         naked_asm!(
-            // 実行中プロセスのスタックへレジスタを保存
+            // レジスタを実行中プロセスのスタックに保存
             "addi sp, sp, -13 * 4",
             "sw ra, 0 * 4(sp)",
             "sw s0, 1 * 4(sp)",

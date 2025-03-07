@@ -1,9 +1,12 @@
 #![no_std]
 use core::fmt::Write;
 
-
 pub const fn align_up(addr: usize, align: usize) -> usize {
     (addr + align - 1) & !(align - 1)
+}
+
+pub const fn is_aligned(value: usize, align: usize) -> bool {
+    value % align == 0
 }
 
 unsafe extern "C" {
