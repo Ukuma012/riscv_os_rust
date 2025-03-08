@@ -1,9 +1,9 @@
 ENTRY(start)
 
 SECTIONS {
-    . = 0x01000000;
+    . = 0x1000000;
 
-    .text : {
+    .text :{
         KEEP(*(.text.start));
         *(.text .text.*);
     }
@@ -17,12 +17,12 @@ SECTIONS {
     }
 
     .bss : ALIGN(4) {
-        __bss = .;
         *(.bss .bss.* .sbss .sbss.*);
-        __bss_end = .;
-    }
 
-    . = ALIGN(4);
-    . += 8 * 1024; /* 8KB */
-    __stack_top = .;
+        . = ALIGN(16); /* https://github.com/nuta/operating-system-in-1000-lines/pull/23 */
+        . += 64 * 1024; /* 64KB */
+        __stack_top = .;
+
+       ASSERT(. < 0x1800000, "too large executable");
+    }
 }

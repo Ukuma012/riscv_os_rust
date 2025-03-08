@@ -6,12 +6,10 @@ use core::arch::{asm, naked_asm};
 use core::{panic::PanicInfo, ptr};
 
 use common::{println, write_csr};
-use mutex::Mutex;
 use process::ProcessManager;
 use trap::trap_handler_entry;
 
 mod memory;
-mod mutex;
 mod process;
 mod sbi;
 mod trap;
@@ -20,11 +18,11 @@ unsafe extern "C" {
     static mut __bss: u32;
     static __bss_end: u32;
     static __stack_top: u32;
-    static __binary_shell_bin_start: u32;
-    static __binary_shell_bin_size: u32;
+    static _binary_shell_bin_start: u32;
+    static _binary_shell_bin_size: u32;
 }
 
-static PM: Mutex<ProcessManager> = Mutex::new(ProcessManager::new());
+static mut PM: ProcessManager = ProcessManager::new();
 
 #[unsafe(no_mangle)]
 fn kernel_main() {
@@ -38,13 +36,12 @@ fn kernel_main() {
         write_csr!("sscratch", current_sp);
         write_csr!("stvec", trap_handler_entry as u32);
 
-        let start = ptr::addr_of!(__binary_shell_bin_start);
-        let size = ptr::addr_of!(__binary_shell_bin_size) as usize;
+        let start = ptr::addr_of!(_binary_shell_bin_start);
+        let size = ptr::addr_of!(_binary_shell_bin_size) as usize;
 
-        let mut pm = PM.lock();
-        pm.init();
-        pm.create_process(start, size);
-        pm.yield_();
+        PM.init();
+        PM.create_process(start, size);
+        PM.yield_();
 
         println!("switched to idle process");
     }
