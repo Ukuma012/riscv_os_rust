@@ -23,6 +23,12 @@ SECTIONS {
         __bss_end = .;
     }
 
+    .shell_bin : {
+        __binary_shell_bin_start = .;
+        *(.shell_bin)
+        __binary_shell_bin_size = . - __binary_shell_bin_start;
+    }
+
     . = ALIGN(4);
     . += 128 * 1024; /* 128KB */
     __stack_top = .;

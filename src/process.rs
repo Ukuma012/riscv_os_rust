@@ -17,7 +17,7 @@ unsafe extern "C" fn user_entry() {
     unsafe {
         naked_asm!(
             "la a0, {sepc}",
-            "csrw, sepc, a0",
+            "csrw sepc, a0",
             "la a0, {sstatus}",
             "csrw sstatus, a0",
             "sret",
