@@ -10,6 +10,7 @@ pub const PAGE_R: u32 = 1 << 1;
 pub const PAGE_W: u32 = 1 << 2;
 pub const PAGE_X: u32 = 1 << 3;
 pub const PAGE_U: u32 = 1 << 4;
+pub const SATP_SV32: u32 = 1 << 31;
 
 unsafe extern "C" {
     static mut __free_ram: u8;

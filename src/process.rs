@@ -1,12 +1,10 @@
 use crate::memory::{
-    PAGE_R, PAGE_SIZE, PAGE_U, PAGE_W, PAGE_X, PAddr, VAddr, alloc_pages, map_page,
+    PAGE_R, PAGE_SIZE, PAGE_U, PAGE_W, PAGE_X, SATP_SV32, VAddr, alloc_pages, map_page,
 };
-use core::{arch::naked_asm, ptr};
-
-unsafe extern "C" {
-    static mut __kernel_base: u32;
-    static mut __free_ram_end: u32;
-}
+use core::{
+    arch::{asm, naked_asm},
+    ptr,
+};
 
 const PROCS_MAX: usize = 8;
 const USER_BASE: usize = 0x01000000;
@@ -19,7 +17,7 @@ unsafe extern "C" fn user_entry() {
     unsafe {
         naked_asm!(
             "la a0, {sepc}",
-            "csrw sepc, a0",
+            "csrw, sepc, a0",
             "la a0, {sstatus}",
             "csrw sstatus, a0",
             "sret",
@@ -27,6 +25,11 @@ unsafe extern "C" fn user_entry() {
             sstatus = const SSTATUS,
         )
     }
+}
+
+unsafe extern "C" {
+    static mut __kernel_base: u32;
+    static mut __free_ram_end: u32;
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
@@ -38,11 +41,11 @@ enum State {
 }
 
 #[derive(Copy, Clone, Debug)]
-struct Process {
+pub struct Process {
     pid: u32,
     state: State,
-    sp: VAddr,
-    page_table: PAddr,
+    pub sp: VAddr,
+    page_table: VAddr,
     stack: [u8; 8192],
 }
 
@@ -92,7 +95,7 @@ impl ProcessManager {
             *sp.offset(-11) = 0; // s1
             *sp.offset(-12) = 0; // s0
             *sp.offset(-13) = 0; // ra
-
+            //
             let page_table = alloc_pages(1);
             let mut paddr = ptr::addr_of_mut!(__kernel_base) as *mut u8;
             while paddr < ptr::addr_of_mut!(__free_ram_end) as *mut u8 {
@@ -112,7 +115,7 @@ impl ProcessManager {
         }
     }
 
-    pub fn create(&mut self, image: *const u32, image_size: usize) {
+    pub fn create_process(&mut self, image: *const u32, image_size: usize) {
         unsafe {
             if let Some((i, proc)) = self
                 .procs
@@ -122,6 +125,7 @@ impl ProcessManager {
             {
                 let stack = ptr::addr_of_mut!(proc.stack) as *mut u32;
                 let sp = stack.add(proc.stack.len());
+
                 *sp.offset(-1) = 0; // s11
                 *sp.offset(-2) = 0; // s10
                 *sp.offset(-3) = 0; // s9
@@ -134,7 +138,7 @@ impl ProcessManager {
                 *sp.offset(-10) = 0; // s2
                 *sp.offset(-11) = 0; // s1
                 *sp.offset(-12) = 0; // s0
-                *sp.offset(-13) = user_entry as u32;
+                *sp.offset(-13) = user_entry as u32; // ra
 
                 let page_table = alloc_pages(1);
                 let mut paddr = ptr::addr_of_mut!(__kernel_base) as *mut u8;
@@ -171,11 +175,47 @@ impl ProcessManager {
             }
         }
     }
+
+    pub fn yield_(&mut self) {
+        let mut next: usize = 0;
+        for i in 0..PROCS_MAX {
+            let idx = (self.current + i + 1) % PROCS_MAX;
+            let proc = &self.procs[idx];
+            if proc.state == State::RUNNABLE {
+                next = idx;
+                break;
+            }
+        }
+
+        if next == self.current {
+            return;
+        }
+
+        unsafe {
+            let next_proc = &mut self.procs[next];
+            let next_stack = ptr::addr_of_mut!(next_proc.stack) as *mut u32;
+            let next_stack_top = next_stack.add(next_proc.stack.len());
+            asm!(
+                "sfence.vma",
+                "csrw satp, {satp}",
+                "sfence.vma",
+                "csrw sscratch, {sscratch}",
+                satp = in(reg) SATP_SV32 | (next_proc.page_table / PAGE_SIZE as u32),
+                sscratch = in(reg) next_stack_top,
+            );
+        }
+
+        let prev = self.current;
+        self.current = next;
+        unsafe {
+            switch_context(&mut self.procs[prev].sp, &self.procs[next].sp);
+        }
+    }
 }
 
 #[naked]
 #[unsafe(no_mangle)]
-unsafe extern "C" fn switch_context(prev_sp: *mut u32, next_sp: *const u32) {
+pub unsafe extern "C" fn switch_context(prev_sp: *mut u32, next_sp: *const u32) {
     unsafe {
         naked_asm!(
             // レジスタを実行中プロセスのスタックに保存
@@ -194,7 +234,9 @@ unsafe extern "C" fn switch_context(prev_sp: *mut u32, next_sp: *const u32) {
             "sw s10, 11 * 4(sp)",
             "sw s11, 12 * 4(sp)",
             // スタックポインタの切り替え
+            // 現在のspをprev_spのアドレスに保存
             "sw sp, (a0)",
+            // next_spから新しいspを読み込む
             "lw sp, (a1)",
             // 次のプロセスのスタックからレジスタを復元
             "lw ra, 0 * 4(sp)",

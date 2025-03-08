@@ -6,7 +6,6 @@ use core::arch::{asm, naked_asm};
 use core::{panic::PanicInfo, ptr};
 
 use common::{println, write_csr};
-use memory::alloc_pages;
 use trap::trap_handler_entry;
 
 mod memory;
