@@ -2,9 +2,7 @@ use crate::putchar;
 
 #[unsafe(no_mangle)]
 fn main() {
-    loop {
-        print("> ");
-    }
+    loop {}
 }
 
 fn print(s: &str) {
