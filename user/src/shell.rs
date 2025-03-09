@@ -8,7 +8,28 @@ fn main() {
     loop {
         let ch = getchar() as u8;
         putchar(ch);
+        if ch == b'\r' {
+            cmdline[count] = b'\0';
+            print("\n");
+            break;
+        } else {
+            cmdline[count] = ch;
+        }
+
+        count += 1;
+        if count == 128 {
+            break;
+        }
     }
+    match core::str::from_utf8(&cmdline[..count]) {
+        Ok(s) => {
+            if s == "hello" {
+                print("Hello world\n");
+            }
+        }
+        Err(_) => print("command not found\n"),
+    }
+    print("\n");
 }
 
 fn print(s: &str) {
