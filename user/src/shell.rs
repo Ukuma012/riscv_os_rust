@@ -1,8 +1,14 @@
-use crate::putchar;
+use crate::{getchar, putchar};
 
 #[unsafe(no_mangle)]
 fn main() {
-    print("Hello World from shell!\n");
+    print("> ");
+    let mut cmdline: [u8; 128] = [0; 128];
+    let mut count = 0;
+    loop {
+        let ch = getchar() as u8;
+        putchar(ch);
+    }
 }
 
 fn print(s: &str) {

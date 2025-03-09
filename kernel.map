@@ -3571,23 +3571,23 @@
 80206798 80206798       38     1         /home/u/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/riscv32i-unknown-none-elf/lib/libcompiler_builtins-9a865600320e43f2.rlib(compiler_builtins-9a865600320e43f2.compiler_builtins.6412b3e9820bbce5-cgu.295.rcgu.o):(.eh_frame+0x14)
 802067d0 802067d0       28     1         /home/u/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/riscv32i-unknown-none-elf/lib/libcompiler_builtins-9a865600320e43f2.rlib(compiler_builtins-9a865600320e43f2.compiler_builtins.6412b3e9820bbce5-cgu.302.rcgu.o):(.eh_frame+0x14)
 802067f8 802067f8       28     1         /home/u/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/lib/rustlib/riscv32i-unknown-none-elf/lib/libcompiler_builtins-9a865600320e43f2.rlib(compiler_builtins-9a865600320e43f2.compiler_builtins.6412b3e9820bbce5-cgu.326.rcgu.o):(.eh_frame+0x14)
-80206824 80206824    20318     4 .data
+80206824 80206824    204f8     4 .data
 80206824 80206824    10084     4         /home/u/develop/riscv_os_rust/target/riscv32i-unknown-none-elf/debug/deps/riscv_os_rust-83387499e7431fbf.9z3uq65us4k7a01uduvk8rp9v.rcgu.o:(.data._ZN13riscv_os_rust2PM17h9946a34415643d3aE)
 80206824 80206824        0     1                 $d
 80206824 80206824    10084     1                 riscv_os_rust::PM::h9946a34415643d3a
 802168a8 802168a8        4     4         /home/u/develop/riscv_os_rust/target/riscv32i-unknown-none-elf/debug/deps/riscv_os_rust-83387499e7431fbf.afyu82aiufa4ist01p0mxed83.rcgu.o:(.data._ZN13riscv_os_rust6memory10NEXT_PADDR17h15cb04e2e1893d58E)
 802168a8 802168a8        4     1                 riscv_os_rust::memory::NEXT_PADDR::h15cb04e2e1893d58
 802168a8 802168a8        0     1                 $d
-802168ac 802168ac    10290     1         ./shell.bin.o:(.data)
+802168ac 802168ac    10470     1         ./shell.bin.o:(.data)
 802168ac 802168ac        0     1                 _binary_shell_bin_start
-80226b3c 80226b3c        0     1                 _binary_shell_bin_end
-80226b3c 80226b3c        0     4 .bss
-80226b3c 80226b3c        0     1         __bss = .
-80226b3c 80226b3c        0     1         __bss_end = .
-80226b3c 80226b3c        0     1 . = ALIGN(4)
-80226b3c 80226b3c    20000     1 . += 128 * 1024
-80246b3c 80246b3c        0     1 __stack_top = .
-80246b3c 80246b3c      4c4     1 . = ALIGN(4096)
+80226d1c 80226d1c        0     1                 _binary_shell_bin_end
+80226d1c 80226d1c        0     4 .bss
+80226d1c 80226d1c        0     1         __bss = .
+80226d1c 80226d1c        0     1         __bss_end = .
+80226d1c 80226d1c        0     1 . = ALIGN(4)
+80226d1c 80226d1c    20000     1 . += 128 * 1024
+80246d1c 80246d1c        0     1 __stack_top = .
+80246d1c 80246d1c      2e4     1 . = ALIGN(4096)
 80247000 80247000        0     1 __free_ram = .
 80247000 80247000  4000000     1 . += 64 * 1024 * 1024
 84247000 84247000        0     1 __free_ram_end = .

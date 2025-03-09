@@ -9,7 +9,8 @@ use core::{
 
 mod shell;
 
-pub const SYS_PUTCHAR: u32 = 1;
+const SYS_PUTCHAR: u32 = 1;
+const SYS_GETCHAR: u32 = 2;
 
 unsafe extern "C" {
     static __stack_top: u32;
@@ -59,4 +60,8 @@ pub fn putchar(ch: u8) {
     unsafe {
         syscall(SYS_PUTCHAR, ch as u32, 0, 0);
     }
+}
+
+pub fn getchar() -> u32 {
+    unsafe { syscall(SYS_GETCHAR, 0, 0, 0) }
 }
