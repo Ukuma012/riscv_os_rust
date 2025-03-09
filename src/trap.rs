@@ -1,8 +1,10 @@
 use core::{arch::naked_asm, panic};
 
 use common::read_csr;
+use common::write_csr;
 
 use crate::sbi::{getchar, putchar};
+use crate::PM;
 
 const SYS_PUTCHAR: u32 = 1;
 const SYS_GETCHAR: u32 = 2;
@@ -138,6 +140,8 @@ fn handle_trap(f: *mut TrapFrame) {
     } else {
         panic!("unexpected trap scause={scause:x}, stval={stval:x}, sepc={user_pc:x}");
     }
+
+    write_csr!("sepc", user_pc);
 }
 
 fn handle_syscall(f: *mut TrapFrame) {
@@ -150,6 +154,8 @@ fn handle_syscall(f: *mut TrapFrame) {
                 f.a0 = ch as u32;
                 break;
             }
+
+            unsafe { PM.yield_() }
         },
         _ => panic!("unexpected syscall a3={:x}", f.a3 as u32),
     }

@@ -2,7 +2,7 @@ use crate::putchar;
 
 #[unsafe(no_mangle)]
 fn main() {
-    loop {}
+    print("Hello World from shell!\n");
 }
 
 fn print(s: &str) {

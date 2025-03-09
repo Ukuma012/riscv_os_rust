@@ -47,7 +47,7 @@ unsafe fn syscall(sysno: u32, arg0: u32, arg1: u32, arg2: u32) -> u32 {
             in("a0") arg0,
             in("a1") arg1,
             in("a2") arg2,
-            in("a3") sysno,
+            in("a3") sysno, // システムコール番号
             lateout("a0") result
         );
     }
